@@ -1,16 +1,16 @@
---=== AUTO BUY VIP VERSÃO 03 (COM ABAS) - EXTRAS COM ANTI-AFK ===--
+--=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM ABAS, ANTI-AFK E PULO ALTO ===--
 
 -- Services
 local rep = game:GetService("ReplicatedStorage")
 local player = game:GetService("Players").LocalPlayer
-local vu = game:GetService("VirtualUser")  -- Para anti-afk
+local vu = game:GetService("VirtualUser")
 
 -- Remove GUI anterior
 if player.PlayerGui:FindFirstChild("AutoBuyVIP") then
     player.PlayerGui.AutoBuyVIP:Destroy()
 end
 
--- SEU EVENTO EXATO
+-- Evento de compra (seu formato exato)
 local BuyFood = rep:WaitForChild("Events"):WaitForChild("Shops"):WaitForChild("BuyFood")
 local Stock = rep:WaitForChild("Stock")
 
@@ -18,11 +18,14 @@ local Stock = rep:WaitForChild("Stock")
 local INTERVALO = 1
 local ATIVO = false
 local MINIMIZADO = false
-local ABA_ATIVA = "Compras"  -- "Compras" ou "Extras"
+local ABA_ATIVA = "Compras"
 local ANTI_AFK_ATIVO = false
+local PULO_ALTO_ATIVO = false
 local idleConnection = nil
+local jumpConnection = nil
+local jumpPowerOriginal = 50
 
--- ITENS (para compras)
+-- ITENS (com fallback)
 local itens = {
     OP = {
         nome = "⭐ STAR",
@@ -55,8 +58,8 @@ gui.Parent = player.PlayerGui
 
 -- Frame principal
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 280)
-frame.Position = UDim2.new(0.5, -150, 0.5, -140)
+frame.Size = UDim2.new(0, 300, 0, 320)  -- Aumentei a altura para caber o novo botão
+frame.Position = UDim2.new(0.5, -150, 0.5, -160)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.1
 frame.BorderSizePixel = 0
@@ -131,17 +134,13 @@ local minBorda = Instance.new("UICorner")
 minBorda.CornerRadius = UDim.new(0, 6)
 minBorda.Parent = minimizarBtn
 
--- ===== PÁGINAS ===== --
-local paginas = {}
-
--- Página de Compras (conteúdo original)
+-- ===== PÁGINA DE COMPRAS ===== --
 local paginaCompras = Instance.new("Frame")
 paginaCompras.Name = "PaginaCompras"
 paginaCompras.Size = UDim2.new(1, 0, 1, -40)
 paginaCompras.Position = UDim2.new(0, 0, 0, 40)
 paginaCompras.BackgroundTransparency = 1
 paginaCompras.Parent = frame
-paginas.Compras = paginaCompras
 
 -- Status
 local status = Instance.new("TextLabel")
@@ -304,7 +303,7 @@ local teleportBorda = Instance.new("UICorner")
 teleportBorda.CornerRadius = UDim.new(0, 8)
 teleportBorda.Parent = teleportBtn
 
--- ===== PÁGINA EXTRAS (ANTI-AFK) ===== --
+-- ===== PÁGINA EXTRAS (ANTI-AFK + PULO ALTO) ===== --
 local paginaExtras = Instance.new("Frame")
 paginaExtras.Name = "PaginaExtras"
 paginaExtras.Size = UDim2.new(1, 0, 1, -40)
@@ -312,88 +311,116 @@ paginaExtras.Position = UDim2.new(0, 0, 0, 40)
 paginaExtras.BackgroundTransparency = 1
 paginaExtras.Visible = false
 paginaExtras.Parent = frame
-paginas.Extras = paginaExtras
 
 -- Título da página
 local extrasTitulo = Instance.new("TextLabel")
 extrasTitulo.Size = UDim2.new(1, -20, 0, 30)
 extrasTitulo.Position = UDim2.new(0, 10, 0, 10)
 extrasTitulo.BackgroundTransparency = 1
-extrasTitulo.Text = "🛡️ ANTI-AFK"
+extrasTitulo.Text = "🛡️ EXTRAS"
 extrasTitulo.TextColor3 = Color3.fromRGB(255, 255, 255)
 extrasTitulo.TextSize = 16
 extrasTitulo.Font = Enum.Font.GothamBold
 extrasTitulo.Parent = paginaExtras
 
--- Descrição
-local desc = Instance.new("TextLabel")
-desc.Size = UDim2.new(1, -20, 0, 40)
-desc.Position = UDim2.new(0, 10, 0, 40)
-desc.BackgroundTransparency = 1
-desc.Text = "Impede que você seja desconectado por inatividade. Não clica na tela nem move o personagem."
-desc.TextColor3 = Color3.fromRGB(200, 200, 200)
-desc.TextSize = 11
-desc.Font = Enum.Font.Gotham
-desc.TextWrapped = true
-desc.Parent = paginaExtras
+-- ===== ANTI-AFK ===== --
+local antiAfkTitulo = Instance.new("TextLabel")
+antiAfkTitulo.Size = UDim2.new(1, -20, 0, 20)
+antiAfkTitulo.Position = UDim2.new(0, 10, 0, 40)
+antiAfkTitulo.BackgroundTransparency = 1
+antiAfkTitulo.Text = "▶ ANTI-AFK"
+antiAfkTitulo.TextColor3 = Color3.fromRGB(200, 200, 255)
+antiAfkTitulo.TextSize = 12
+antiAfkTitulo.Font = Enum.Font.GothamBold
+antiAfkTitulo.TextXAlignment = Enum.TextXAlignment.Left
+antiAfkTitulo.Parent = paginaExtras
 
--- Botão para ativar/desativar Anti-AFK
+-- Botão Anti-AFK
 local antiAfkBtn = Instance.new("TextButton")
-antiAfkBtn.Size = UDim2.new(0.8, 0, 0, 40)
-antiAfkBtn.Position = UDim2.new(0.1, 0, 0, 100)
+antiAfkBtn.Size = UDim2.new(0.8, 0, 0, 30)
+antiAfkBtn.Position = UDim2.new(0.1, 0, 0, 60)
 antiAfkBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 antiAfkBtn.Text = "ATIVAR ANTI-AFK"
 antiAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-antiAfkBtn.TextSize = 14
+antiAfkBtn.TextSize = 11
 antiAfkBtn.Font = Enum.Font.GothamBold
 antiAfkBtn.BorderSizePixel = 0
 antiAfkBtn.Parent = paginaExtras
 
 local antiBorda = Instance.new("UICorner")
-antiBorda.CornerRadius = UDim.new(0, 8)
+antiBorda.CornerRadius = UDim.new(0, 6)
 antiBorda.Parent = antiAfkBtn
 
--- Status do Anti-AFK
+-- Status Anti-AFK
 local antiStatus = Instance.new("TextLabel")
-antiStatus.Size = UDim2.new(1, -20, 0, 30)
-antiStatus.Position = UDim2.new(0, 10, 0, 150)
+antiStatus.Size = UDim2.new(1, -20, 0, 20)
+antiStatus.Position = UDim2.new(0, 10, 0, 95)
 antiStatus.BackgroundTransparency = 1
 antiStatus.Text = "Status: DESATIVADO"
 antiStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
-antiStatus.TextSize = 12
-antiStatus.Font = Enum.Font.GothamBold
+antiStatus.TextSize = 11
+antiStatus.Font = Enum.Font.Gotham
+antiStatus.TextXAlignment = Enum.TextXAlignment.Left
 antiStatus.Parent = paginaExtras
 
--- Função para ativar/desativar Anti-AFK
-local function toggleAntiAfk()
-    ANTI_AFK_ATIVO = not ANTI_AFK_ATIVO
-    if ANTI_AFK_ATIVO then
-        -- Conecta ao evento Idled
-        idleConnection = player.Idled:Connect(function()
-            vu:CaptureController()
-            vu:ClickButton2(Vector2.new())
-        end)
-        antiAfkBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-        antiAfkBtn.Text = "DESATIVAR ANTI-AFK"
-        antiStatus.Text = "Status: ATIVADO"
-        antiStatus.TextColor3 = Color3.fromRGB(100, 255, 100)
-        addLog("🛡️ Anti-AFK ativado (indetectável)", "info")
-    else
-        if idleConnection then
-            idleConnection:Disconnect()
-            idleConnection = nil
-        end
-        antiAfkBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        antiAfkBtn.Text = "ATIVAR ANTI-AFK"
-        antiStatus.Text = "Status: DESATIVADO"
-        antiStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
-        addLog("🛡️ Anti-AFK desativado", "info")
-    end
-end
+-- ===== PULO ALTO ===== --
+local puloAltoTitulo = Instance.new("TextLabel")
+puloAltoTitulo.Size = UDim2.new(1, -20, 0, 20)
+puloAltoTitulo.Position = UDim2.new(0, 10, 0, 125)
+puloAltoTitulo.BackgroundTransparency = 1
+puloAltoTitulo.Text = "▶ PULO ALTO"
+puloAltoTitulo.TextColor3 = Color3.fromRGB(200, 200, 255)
+puloAltoTitulo.TextSize = 12
+puloAltoTitulo.Font = Enum.Font.GothamBold
+puloAltoTitulo.TextXAlignment = Enum.TextXAlignment.Left
+puloAltoTitulo.Parent = paginaExtras
 
-antiAfkBtn.MouseButton1Click:Connect(toggleAntiAfk)
+-- Botão Pulo Alto
+local puloAltoBtn = Instance.new("TextButton")
+puloAltoBtn.Size = UDim2.new(0.6, 0, 0, 30)
+puloAltoBtn.Position = UDim2.new(0.1, 0, 0, 145)
+puloAltoBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+puloAltoBtn.Text = "ATIVAR PULO ALTO"
+puloAltoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+puloAltoBtn.TextSize = 11
+puloAltoBtn.Font = Enum.Font.GothamBold
+puloAltoBtn.BorderSizePixel = 0
+puloAltoBtn.Parent = paginaExtras
 
--- ===== FUNÇÕES COMPARTILHADAS ===== --
+local puloBorda = Instance.new("UICorner")
+puloBorda.CornerRadius = UDim.new(0, 6)
+puloBorda.Parent = puloAltoBtn
+
+-- Slider/Input para altura do pulo
+local alturaInput = Instance.new("TextBox")
+alturaInput.Size = UDim2.new(0.2, -5, 0, 30)
+alturaInput.Position = UDim2.new(0.72, 0, 0, 145)
+alturaInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+alturaInput.Text = "100"
+alturaInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+alturaInput.TextSize = 12
+alturaInput.Font = Enum.Font.GothamBold
+alturaInput.PlaceholderText = "altura"
+alturaInput.BorderSizePixel = 0
+alturaInput.Parent = paginaExtras
+
+local inputBorda = Instance.new("UICorner")
+inputBorda.CornerRadius = UDim.new(0, 6)
+inputBorda.Parent = alturaInput
+
+-- Status Pulo Alto
+local puloStatus = Instance.new("TextLabel")
+puloStatus.Size = UDim2.new(1, -20, 0, 20)
+puloStatus.Position = UDim2.new(0, 10, 0, 180)
+puloStatus.BackgroundTransparency = 1
+puloStatus.Text = "Status: DESATIVADO"
+puloStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+puloStatus.TextSize = 11
+puloStatus.Font = Enum.Font.Gotham
+puloStatus.TextXAlignment = Enum.TextXAlignment.Left
+puloStatus.Parent = paginaExtras
+
+-- ===== FUNÇÕES ===== --
 
 -- Função de log (para página compras)
 local function addLog(texto, tipo)
@@ -459,6 +486,91 @@ local function loopCompra()
     end
 end
 
+-- Função para aplicar pulo alto no personagem
+local function aplicarPuloAlto(personagem, altura)
+    local humanoid = personagem:WaitForChild("Humanoid")
+    if PULO_ALTO_ATIVO then
+        jumpPowerOriginal = humanoid.JumpPower
+        humanoid.JumpPower = altura
+        addLog("🦘 Pulo alto ativado: " .. altura, "sucesso")
+    else
+        humanoid.JumpPower = jumpPowerOriginal
+        addLog("🦘 Pulo alto desativado", "info")
+    end
+end
+
+-- Função para ativar/desativar Pulo Alto
+local function togglePuloAlto()
+    PULO_ALTO_ATIVO = not PULO_ALTO_ATIVO
+    
+    local altura = tonumber(alturaInput.Text) or 100
+    if altura < 50 then altura = 50 end
+    
+    if PULO_ALTO_ATIVO then
+        if player.Character then
+            aplicarPuloAlto(player.Character, altura)
+        end
+        -- Aplica quando o personagem aparecer
+        jumpConnection = player.CharacterAdded:Connect(function(char)
+            aplicarPuloAlto(char, altura)
+        end)
+        
+        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        puloAltoBtn.Text = "DESATIVAR PULO"
+        puloStatus.Text = "Status: ATIVADO (" .. altura .. ")"
+        puloStatus.TextColor3 = Color3.fromRGB(100, 255, 100)
+        addLog("🦘 Pulo alto ativado: " .. altura, "sucesso")
+    else
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+        if player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = 50
+            end
+        end
+        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        puloAltoBtn.Text = "ATIVAR PULO ALTO"
+        puloStatus.Text = "Status: DESATIVADO"
+        puloStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+        addLog("🦘 Pulo alto desativado", "info")
+    end
+end
+
+-- Função para ativar/desativar Anti-AFK
+local function toggleAntiAfk()
+    ANTI_AFK_ATIVO = not ANTI_AFK_ATIVO
+    if ANTI_AFK_ATIVO then
+        idleConnection = player.Idled:Connect(function()
+            vu:CaptureController()
+            vu:ClickButton2(Vector2.new())
+        end)
+        antiAfkBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        antiAfkBtn.Text = "DESATIVAR ANTI-AFK"
+        antiStatus.Text = "Status: ATIVADO"
+        antiStatus.TextColor3 = Color3.fromRGB(100, 255, 100)
+        addLog("🛡️ Anti-AFK ativado", "sucesso")
+    else
+        if idleConnection then
+            idleConnection:Disconnect()
+            idleConnection = nil
+        end
+        antiAfkBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        antiAfkBtn.Text = "ATIVAR ANTI-AFK"
+        antiStatus.Text = "Status: DESATIVADO"
+        antiStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+        addLog("🛡️ Anti-AFK desativado", "info")
+    end
+end
+
+-- Conecta os botões
+antiAfkBtn.MouseButton1Click:Connect(toggleAntiAfk)
+puloAltoBtn.MouseButton1Click:Connect(togglePuloAlto)
+
+-- ===== FUNÇÕES DE INTERFACE ===== --
+
 -- Efeito intermitente
 spawn(function()
     while true do
@@ -475,7 +587,6 @@ end)
 -- Função para trocar de aba
 local function selecionarAba(aba)
     ABA_ATIVA = aba
-    -- Atualiza cores dos botões
     if aba == "Compras" then
         abaCompras.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
         abaCompras.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -487,7 +598,6 @@ local function selecionarAba(aba)
         abaCompras.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
         abaCompras.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
-    -- Mostra/esconde páginas
     paginaCompras.Visible = (aba == "Compras")
     paginaExtras.Visible = (aba == "Extras")
 end
@@ -511,8 +621,7 @@ local function toggleMinimizar()
         paginaExtras.Visible = false
         minimizarBtn.Text = "□"
     else
-        frame.Size = UDim2.new(0, 300, 0, 280)
-        -- Restaura a aba ativa
+        frame.Size = UDim2.new(0, 300, 0, 320)
         selecionarAba(ABA_ATIVA)
         minimizarBtn.Text = "−"
     end
@@ -547,10 +656,10 @@ end)
 selecionarAba("Compras")
 
 -- Mensagens iniciais
-addLog("✅ VIP Auto Buy v03 (com Extras)", "info")
-addLog("🔽 Abas: Compras e Extras (Anti-AFK)", "info")
+addLog("✅ VIP Auto Buy v03 (oficial)", "info")
+addLog("🔽 Abas: Compras e Extras", "info")
 if itens.OP.objeto then addLog("⭐ STAR: Disponível", "sucesso") end
 if itens.SECRET.objeto then addLog("🥛🍪 Milk: Disponível", "sucesso") end
 
-print("=== AUTO BUY VIP VERSÃO 03 (EXTRAS) ===")
-print("✅ Aba Extras com Anti-AFK indetectável")
+print("=== AUTO BUY VIP VERSÃO 03 (OFICIAL) ===")
+print("✅ Anti-AFK e Pulo Alto incluídos")
