@@ -1,4 +1,5 @@
---=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM ABAS, ANTI-AFK E PULO ALTO ===--
+--=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM TIMER DE RESTOCK ===--
+-- Abas: Compras e Extras (Anti-AFK + Pulo Alto)
 
 -- Services
 local rep = game:GetService("ReplicatedStorage")
@@ -58,7 +59,7 @@ gui.Parent = player.PlayerGui
 
 -- Frame principal
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 320)  -- Aumentei a altura para caber o novo botão
+frame.Size = UDim2.new(0, 300, 0, 320)
 frame.Position = UDim2.new(0.5, -150, 0.5, -160)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.1
@@ -157,20 +158,35 @@ local statusBorda = Instance.new("UICorner")
 statusBorda.CornerRadius = UDim.new(0, 8)
 statusBorda.Parent = status
 
--- Timer
+-- Timer do Auto Buy (esquerda)
 local timerLabel = Instance.new("TextLabel")
-timerLabel.Size = UDim2.new(1, -20, 0, 25)
+timerLabel.Size = UDim2.new(0.5, -5, 0, 25)
 timerLabel.Position = UDim2.new(0, 10, 0, 45)
 timerLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-timerLabel.Text = "⏱️ 1s"
+timerLabel.Text = "⏱️ Auto: 1s"
 timerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-timerLabel.TextSize = 14
+timerLabel.TextSize = 12
 timerLabel.Font = Enum.Font.Gotham
 timerLabel.Parent = paginaCompras
 
 local timerBorda = Instance.new("UICorner")
 timerBorda.CornerRadius = UDim.new(0, 8)
 timerBorda.Parent = timerLabel
+
+-- Timer do Restock (direita)
+local restockTimer = Instance.new("TextLabel")
+restockTimer.Size = UDim2.new(0.5, -5, 0, 25)
+restockTimer.Position = UDim2.new(0.5, 5, 0, 45)
+restockTimer.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+restockTimer.Text = "🏪 Restock: ?"
+restockTimer.TextColor3 = Color3.fromRGB(200, 200, 200)
+restockTimer.TextSize = 12
+restockTimer.Font = Enum.Font.Gotham
+restockTimer.Parent = paginaCompras
+
+local restockBorda = Instance.new("UICorner")
+restockBorda.CornerRadius = UDim.new(0, 8)
+restockBorda.Parent = restockTimer
 
 -- Área dos itens VIP
 local itensFrame = Instance.new("Frame")
@@ -420,7 +436,7 @@ puloStatus.Font = Enum.Font.Gotham
 puloStatus.TextXAlignment = Enum.TextXAlignment.Left
 puloStatus.Parent = paginaExtras
 
--- ===== FUNÇÕES ===== --
+-- ===== FUNÇÕES COMPARTILHADAS ===== --
 
 -- Função de log (para página compras)
 local function addLog(texto, tipo)
@@ -452,6 +468,17 @@ local function comprar(item)
     return ok
 end
 
+-- Função para aplicar pulo alto no personagem
+local function aplicarPuloAlto(personagem, altura)
+    local humanoid = personagem:WaitForChild("Humanoid")
+    if PULO_ALTO_ATIVO then
+        jumpPowerOriginal = humanoid.JumpPower
+        humanoid.JumpPower = altura
+    else
+        humanoid.JumpPower = jumpPowerOriginal
+    end
+end
+
 -- Loop principal
 local function loopCompra()
     ATIVO = true
@@ -478,64 +505,27 @@ local function loopCompra()
             addLog("⏳ Nenhum item disponível", "info")
         end
         
-        for i = INTERVALO, 1, -1 do
-            if not ATIVO then break end
-            timerLabel.Text = "⏱️ " .. i .. "s"
-            wait(1)
-        end
-    end
-end
-
--- Função para aplicar pulo alto no personagem
-local function aplicarPuloAlto(personagem, altura)
-    local humanoid = personagem:WaitForChild("Humanoid")
-    if PULO_ALTO_ATIVO then
-        jumpPowerOriginal = humanoid.JumpPower
-        humanoid.JumpPower = altura
-        addLog("🦘 Pulo alto ativado: " .. altura, "sucesso")
-    else
-        humanoid.JumpPower = jumpPowerOriginal
-        addLog("🦘 Pulo alto desativado", "info")
-    end
-end
-
--- Função para ativar/desativar Pulo Alto
-local function togglePuloAlto()
-    PULO_ALTO_ATIVO = not PULO_ALTO_ATIVO
-    
-    local altura = tonumber(alturaInput.Text) or 100
-    if altura < 50 then altura = 50 end
-    
-    if PULO_ALTO_ATIVO then
-        if player.Character then
-            aplicarPuloAlto(player.Character, altura)
-        end
-        -- Aplica quando o personagem aparecer
-        jumpConnection = player.CharacterAdded:Connect(function(char)
-            aplicarPuloAlto(char, altura)
+        -- Atualiza timer do restock
+        local success, timerTexto = pcall(function()
+            local timerObj = player.PlayerGui:FindFirstChild("BabyCatsGui"):FindFirstChild("Shop"):FindFirstChild("FoodShop"):FindFirstChild("Frame"):FindFirstChild("Topbar"):FindFirstChild("RestockTimer")
+            if timerObj and timerObj:IsA("TextLabel") then
+                return timerObj.Text
+            end
+            return "?"
         end)
         
-        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-        puloAltoBtn.Text = "DESATIVAR PULO"
-        puloStatus.Text = "Status: ATIVADO (" .. altura .. ")"
-        puloStatus.TextColor3 = Color3.fromRGB(100, 255, 100)
-        addLog("🦘 Pulo alto ativado: " .. altura, "sucesso")
-    else
-        if jumpConnection then
-            jumpConnection:Disconnect()
-            jumpConnection = nil
+        if success and timerTexto then
+            restockTimer.Text = "🏪 " .. timerTexto
+        else
+            restockTimer.Text = "🏪 Restock: ?"
         end
-        if player.Character then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = 50
-            end
+        
+        -- Timer do Auto Buy
+        for i = INTERVALO, 1, -1 do
+            if not ATIVO then break end
+            timerLabel.Text = "⏱️ Auto: " .. i .. "s"
+            wait(1)
         end
-        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        puloAltoBtn.Text = "ATIVAR PULO ALTO"
-        puloStatus.Text = "Status: DESATIVADO"
-        puloStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
-        addLog("🦘 Pulo alto desativado", "info")
     end
 end
 
@@ -565,13 +555,50 @@ local function toggleAntiAfk()
     end
 end
 
--- Conecta os botões
+-- Função para ativar/desativar Pulo Alto
+local function togglePuloAlto()
+    PULO_ALTO_ATIVO = not PULO_ALTO_ATIVO
+    
+    local altura = tonumber(alturaInput.Text) or 100
+    if altura < 50 then altura = 50 end
+    
+    if PULO_ALTO_ATIVO then
+        if player.Character then
+            aplicarPuloAlto(player.Character, altura)
+        end
+        jumpConnection = player.CharacterAdded:Connect(function(char)
+            aplicarPuloAlto(char, altura)
+        end)
+        
+        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        puloAltoBtn.Text = "DESATIVAR PULO"
+        puloStatus.Text = "Status: ATIVADO (" .. altura .. ")"
+        puloStatus.TextColor3 = Color3.fromRGB(100, 255, 100)
+        addLog("🦘 Pulo alto ativado: " .. altura, "sucesso")
+    else
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+        if player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = 50
+            end
+        end
+        puloAltoBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        puloAltoBtn.Text = "ATIVAR PULO ALTO"
+        puloStatus.Text = "Status: DESATIVADO"
+        puloStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+        addLog("🦘 Pulo alto desativado", "info")
+    end
+end
+
+-- Conecta os botões da página Extras
 antiAfkBtn.MouseButton1Click:Connect(toggleAntiAfk)
 puloAltoBtn.MouseButton1Click:Connect(togglePuloAlto)
 
--- ===== FUNÇÕES DE INTERFACE ===== --
-
--- Efeito intermitente
+-- Efeito intermitente no botão AUTO BUY
 spawn(function()
     while true do
         if ATIVO then
@@ -629,7 +656,7 @@ end
 
 minimizarBtn.MouseButton1Click:Connect(toggleMinimizar)
 
--- Eventos dos botões principais
+-- Eventos dos botões principais (Auto Buy e Teleport)
 autoBtn.MouseButton1Click:Connect(function()
     if not ATIVO then
         task.spawn(loopCompra)
@@ -639,7 +666,7 @@ autoBtn.MouseButton1Click:Connect(function()
         autoBtn.Text = "⚡ AUTO BUY"
         status.Text = "⏸️ AUTO BUY: PAUSADO"
         status.TextColor3 = Color3.fromRGB(255, 100, 100)
-        timerLabel.Text = "⏱️ 1s"
+        timerLabel.Text = "⏱️ Auto: 1s"
         addLog("⏹ Auto Buy parado", "info")
     end
 end)
@@ -655,7 +682,7 @@ end)
 -- Inicia com aba Compras
 selecionarAba("Compras")
 
--- Mensagens iniciais
+-- Mensagens iniciais no log
 addLog("✅ VIP Auto Buy v03 (oficial)", "info")
 addLog("🔽 Abas: Compras e Extras", "info")
 if itens.OP.objeto then addLog("⭐ STAR: Disponível", "sucesso") end
@@ -663,3 +690,4 @@ if itens.SECRET.objeto then addLog("🥛🍪 Milk: Disponível", "sucesso") end
 
 print("=== AUTO BUY VIP VERSÃO 03 (OFICIAL) ===")
 print("✅ Anti-AFK e Pulo Alto incluídos")
+print("✅ Timer de Restock adicionado na aba Compras")
