@@ -1,4 +1,4 @@
---=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM TIMER DE RESTOCK CORRIGIDO ===--
+--=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM TIMER DE RESTOCK INTELIGENTE ===--
 -- Abas: Compras e Extras (Anti-AFK + Pulo Alto)
 
 -- Services
@@ -173,7 +173,7 @@ local timerBorda = Instance.new("UICorner")
 timerBorda.CornerRadius = UDim.new(0, 8)
 timerBorda.Parent = timerLabel
 
--- Timer do Restock (direita) - CORRIGIDO com o caminho exato
+-- Timer do Restock (direita)
 local restockTimer = Instance.new("TextLabel")
 restockTimer.Size = UDim2.new(0.5, -5, 0, 25)
 restockTimer.Position = UDim2.new(0.5, 5, 0, 45)
@@ -479,6 +479,46 @@ local function aplicarPuloAlto(personagem, altura)
     end
 end
 
+-- Função para encontrar o timer de restock (busca inteligente)
+local function encontrarRestockTimer()
+    -- Lista de possíveis caminhos (baseado nas imagens)
+    local caminhos = {
+        -- Caminho completo da imagem
+        function()
+            return player.PlayerGui:FindFirstChild("BabyCatsGui") and
+                   player.PlayerGui.BabyCatsGui:FindFirstChild("Shop") and
+                   player.PlayerGui.BabyCatsGui.Shop:FindFirstChild("FoodShop") and
+                   player.PlayerGui.BabyCatsGui.Shop.FoodShop:FindFirstChild("Frame") and
+                   player.PlayerGui.BabyCatsGui.Shop.FoodShop.Frame:FindFirstChild("Topbar") and
+                   player.PlayerGui.BabyCatsGui.Shop.FoodShop.Frame.Topbar:FindFirstChild("RestockTimer")
+        end,
+        -- Caminho alternativo (sem BabyCatsGui)
+        function()
+            return player.PlayerGui:FindFirstChild("FoodShop") and
+                   player.PlayerGui.FoodShop:FindFirstChild("Frame") and
+                   player.PlayerGui.FoodShop.Frame:FindFirstChild("Topbar") and
+                   player.PlayerGui.FoodShop.Frame.Topbar:FindFirstChild("RestockTimer")
+        end,
+        -- Procura em qualquer lugar dentro do PlayerGui
+        function()
+            for _, obj in ipairs(player.PlayerGui:GetDescendants()) do
+                if obj.Name == "RestockTimer" and (obj:IsA("TextLabel") or obj:IsA("TextButton")) then
+                    return obj
+                end
+            end
+            return nil
+        end
+    }
+    
+    for _, buscar in ipairs(caminhos) do
+        local obj = buscar()
+        if obj then
+            return obj
+        end
+    end
+    return nil
+end
+
 -- Loop principal
 local function loopCompra()
     ATIVO = true
@@ -505,21 +545,10 @@ local function loopCompra()
             addLog("⏳ Nenhum item disponível", "info")
         end
         
-        -- Atualiza timer do restock com o caminho correto
-        local success, timerTexto = pcall(function()
-            -- Caminho exato fornecido pelo usuário
-            local timerObj = player.PlayerGui:FindFirstChild("FoodShop") and
-                             player.PlayerGui.FoodShop:FindFirstChild("Frame") and
-                             player.PlayerGui.FoodShop.Frame:FindFirstChild("Topbar") and
-                             player.PlayerGui.FoodShop.Frame.Topbar:FindFirstChild("RestockTimer")
-            if timerObj and timerObj:IsA("TextLabel") then
-                return timerObj.Text
-            end
-            return "?"
-        end)
-        
-        if success and timerTexto then
-            restockTimer.Text = "🏪 " .. timerTexto
+        -- Atualiza timer do restock com busca automática
+        local restockObj = encontrarRestockTimer()
+        if restockObj then
+            restockTimer.Text = "🏪 " .. restockObj.Text
         else
             restockTimer.Text = "🏪 Restock: ?"
         end
@@ -694,4 +723,4 @@ if itens.SECRET.objeto then addLog("🥛🍪 Milk: Disponível", "sucesso") end
 
 print("=== AUTO BUY VIP VERSÃO 03 (OFICIAL) ===")
 print("✅ Anti-AFK e Pulo Alto incluídos")
-print("✅ Timer de Restock corrigido com caminho exato")
+print("✅ Timer de Restock inteligente")
