@@ -1,4 +1,4 @@
---=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM TIMER DE RESTOCK ===--
+--=== AUTO BUY VIP VERSÃO 03 (OFICIAL) - COM TIMER DE RESTOCK CORRIGIDO ===--
 -- Abas: Compras e Extras (Anti-AFK + Pulo Alto)
 
 -- Services
@@ -173,7 +173,7 @@ local timerBorda = Instance.new("UICorner")
 timerBorda.CornerRadius = UDim.new(0, 8)
 timerBorda.Parent = timerLabel
 
--- Timer do Restock (direita)
+-- Timer do Restock (direita) - CORRIGIDO com o caminho exato
 local restockTimer = Instance.new("TextLabel")
 restockTimer.Size = UDim2.new(0.5, -5, 0, 25)
 restockTimer.Position = UDim2.new(0.5, 5, 0, 45)
@@ -505,9 +505,13 @@ local function loopCompra()
             addLog("⏳ Nenhum item disponível", "info")
         end
         
-        -- Atualiza timer do restock
+        -- Atualiza timer do restock com o caminho correto
         local success, timerTexto = pcall(function()
-            local timerObj = player.PlayerGui:FindFirstChild("BabyCatsGui"):FindFirstChild("Shop"):FindFirstChild("FoodShop"):FindFirstChild("Frame"):FindFirstChild("Topbar"):FindFirstChild("RestockTimer")
+            -- Caminho exato fornecido pelo usuário
+            local timerObj = player.PlayerGui:FindFirstChild("FoodShop") and
+                             player.PlayerGui.FoodShop:FindFirstChild("Frame") and
+                             player.PlayerGui.FoodShop.Frame:FindFirstChild("Topbar") and
+                             player.PlayerGui.FoodShop.Frame.Topbar:FindFirstChild("RestockTimer")
             if timerObj and timerObj:IsA("TextLabel") then
                 return timerObj.Text
             end
@@ -690,4 +694,4 @@ if itens.SECRET.objeto then addLog("🥛🍪 Milk: Disponível", "sucesso") end
 
 print("=== AUTO BUY VIP VERSÃO 03 (OFICIAL) ===")
 print("✅ Anti-AFK e Pulo Alto incluídos")
-print("✅ Timer de Restock adicionado na aba Compras")
+print("✅ Timer de Restock corrigido com caminho exato")
